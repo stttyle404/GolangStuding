@@ -1,18 +1,16 @@
-/*
-	Дейта - аналитику поручили задачу от разработчиков , так как он часто ругался с разрабами , в связи с тем
-	что они бесконтрольно использовали его кофемашину
-	Ему нужно найти сломанный сервер среди n серверов , тот сервер , который нужно отправить на техобслуживание
-	Cостояние , которое сообщает об техобслуживание - (это число 5) , значения состояний совершенно неважен.
-	При этом ему дали древний компьютер , который имеет ОЗУ 4мб , при этом ему обязательно нужно использовать всю память.
-	На каждый сервер записано состояние его ядер (от 0 до 65536) ,состояние ядер расположенны хаотично, но как они представленны?
-
-	На вход подается n , где n - максимально допустимое количество серверов.
-	На выходе подается индекс найденного сервера.
-
-	Ограничение памяти : 4мб.
-	Ограничение скорости : 1с.
-
-*/
+//в Неевклидовом коридоре располагается 10^6 серверов
+//При этом у каждого есть свой серийный номер, но он не указан на самом сервере
+//Вас попросили найти сломанный сервер с номером 651953 и починить его .
+//Поэтому вам выдали ноутбук с файлом , где вертикальное расположение серийных номеров серверов (они также располагаются в коридоре, только горизонтально)
+//
+// Ввод : номер нужного сервера target (1<=target<=1000000)
+// Вывод : нужно вывести расположение сервера
+//
+// Ограничение памяти : 4mb
+// Ограничение времени : 1 секунда
+//
+//
+//
 
 package main
 
@@ -26,10 +24,13 @@ import (
 	"time"
 )
 
+// Функция поисков
 func binarySearch(arr []int, target int) int {
 	left, right := 0, len(arr)-1
+
 	for left <= right {
 		mid := left + (right-left)/2
+
 		if arr[mid] == target {
 			return mid
 		} else if arr[mid] < target {
@@ -40,7 +41,6 @@ func binarySearch(arr []int, target int) int {
 	}
 	return -1
 }
-
 func LogicalLinealSearch(arr []int, target int) int {
 	for index, value := range arr {
 		if value == target {
@@ -50,52 +50,52 @@ func LogicalLinealSearch(arr []int, target int) int {
 	return -1
 }
 
+// Основная функция
 func main() {
+	originalArr := []int{}
+	var target int
+	fmt.Scan(&target)
+	if target > 1000000 || target < 1 {
+		panic("Target должен быть от 1 до 10^6 включительно")
+	}
 	startTime := time.Now() //нынешнее время
-
 	f, err := os.Open("arr.txt")
 	if err != nil {
 		panic(err)
 	}
-	arr := []int{}
-	defer f.Close()
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
 		s, _ := strconv.Atoi(sc.Text())
-		arr = append(arr, s)
+		originalArr = append(originalArr, s)
 	}
+	defer f.Close()
 
 	go func() {
 		memStats := &runtime.MemStats{}
 		_ = make([]string, 1000000)
 		runtime.ReadMemStats(memStats)
-		fmt.Printf("\nAlloc = %v\n", memStats.Alloc/1024)
+		fmt.Printf("\nАлоцированно = %v\n", memStats.Alloc/1024)
 	}()
 
-	target := 858348
-	clonearr := make([]int, len(arr))
-	copy(arr, clonearr)
-	sort.Ints(clonearr)
-	index := binarySearch(clonearr, target)
-	//index := LogicalLinealSearch(arr, target)
+	arr := make([]int, len(originalArr))
+	copy(arr, originalArr)
+	sort.Ints(arr)
 
 	duration := time.Since(startTime)
+	indexInSorted := binarySearch(arr, target)
 	if duration > time.Second {
 		fmt.Println("Превышено время выполнения")
 	} else {
-		if index != -1 {
-			// Находим индекс в исходном массиве
-			// Индекс из отсортированного массива в исходном
-			for i, v := range arr {
-				if v == target && index == sort.SearchInts(arr, v) {
-					fmt.Printf("Элемент %d найден на индексе %d в исходном массиве\n", target, i)
+		if indexInSorted != -1 {
+			for i, v := range originalArr {
+				if v == target && indexInSorted == sort.SearchInts(arr, v) {
+					fmt.Printf("Сломанный сервер %d является %d ящик\n", target, i+1)
 					break
 				}
 			}
 		} else {
-			fmt.Println("Элемент не найден")
+			fmt.Println("Сервер не найден")
 		}
 		fmt.Printf("Время выполнения: %v\n", duration)
-
 	}
 }
